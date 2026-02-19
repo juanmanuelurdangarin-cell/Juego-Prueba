@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mi Juego 2D - 3 Niveles</title>
+    <style>
+        body { margin: 0; background: #222; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        canvas { background: #000; border: 4px solid #444; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .ui { position: absolute; top: 20px; text-align: center; pointer-events: none; width: 100%; }
+        #msg { font-size: 24px; font-weight: bold; margin-top: 10px; color: #00ffcc; }
+    </style>
+</head>
+<body>
+
+    <div class="ui">
+        <div id="stats">Nivel: 1 | Vidas: 3 | Puntos: 0</div>
+        <div id="msg">¡Esquiva los cuadros rojos! (Usa las flechas)</div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const stats = document.getElementById("stats");
+    const msg = document.getElementById("msg");
+
+    canvas.width = 600;
+    canvas.height = 400;
+
+    // Estado del juego
+    let level = 1;
+    let score = 0;
+    let lives = 3;
+    let gameOver = false;
+    let enemies = [];
+    let gameRunning = true;
+
+    const player = { x: 50, y: 200, size: 20, speed: 5, color: "#00ffcc" };
+    const keys = {};
+
+    // Configuración de niveles
+    const levelConfig = {
+        1: { enemySpeed: 2, enemyCount: 4, goal: 500, color: "#333" },
+        2: { enemySpeed: 4, enemyCount: 6, goal: 1200, color: "#442200" },
+        3: { enemySpeed: 6, enemyCount: 9, goal: 2500, color: "#440000" }
+    };
+
+    function spawnEnemy() {
+        return {
+            x: canvas.width + Math.random() * 200,
+            y: Math.random() * (canvas.height - 20),
+            size: 20,
+            speed: levelConfig[level].enemySpeed + Math.random() * 2
+        };
+    }
+
+    function initEnemies() {
+        enemies = [];
+        for(let i=0; i < levelConfig[level].enemyCount; i++) {
+            enemies.push(spawnEnemy());
+        }
+    }
+
+    document.addEventListener("keydown", e => keys[e.code] = true);
+    document.addEventListener("keyup", e => keys[e.code] = false);
+
+    function update() {
+        if (!gameRunning) return;
+
+        // Movimiento jugador
+        if (keys["ArrowUp"] && player.y > 0) player.y -= player.speed;
+        if (keys["ArrowDown"] && player.y < canvas.height - player.size) player.y += player.speed;
+        if (keys["ArrowLeft"] && player.x > 0) player.x -= player.speed;
+        if (keys["ArrowRight"] && player.x < canvas.width - player.size) player.x += player.speed;
+
+        // Movimiento enemigos
+        enemies.forEach(en => {
+            en.x -= en.speed;
+            if (en.x < -en.size) {
+                en.x = canvas.width + 50;
+                en.y = Math.random() * (canvas.height - 20);
+                score += 10;
+            }
+
+            // Colisión simple AABB
+            if (player.x < en.x + en.size && player.x + player.size > en.x &&
+                player.y < en.y + en.size && player.y + player.size > en.y) {
+                lives--;
+                en.x = canvas.width + 100; // Reset enemigo tras choque
+                if (lives <= 0) endGame(false);
+            }
+        });
+
+        // Lógica de Niveles
+        if (score >= levelConfig[level].goal) {
+            if (level < 3) {
+                level++;
+                msg.innerText = `¡Nivel ${level}! La velocidad aumenta...`;
+                initEnemies();
+            } else {
+                endGame(true);
+            }
+        }
+
+        stats.innerText = `Nivel: ${level} | Vidas: ${lives} | Puntos: ${score}`;
+    }
+
+    function draw() {
+        ctx.fillStyle = levelConfig[level].color;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Jugador
+        ctx.fillStyle = player.color;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = player.color;
+        ctx.fillRect(player.x, player.y, player.size, player.size);
+
+        // Enemigos
+        ctx.fillStyle = "#ff4444";
+        ctx.shadowColor = "#ff4444";
+        enemies.forEach(en => {
+            ctx.fillRect(en.x, en.y, en.size, en.size);
+        });
+        ctx.shadowBlur = 0;
+    }
+
+    function endGame(win) {
+        gameRunning = false;
+        msg.style.fontSize = "40px";
+        msg.innerText = win ? "¡VICTORIA TOTAL! 🏆" : "GAME OVER 💀";
+        msg.style.color = win ? "#ffff00" : "#ff0000";
+    }
+
+    function loop() {
+        update();
+        draw();
+        if (gameRunning) requestAnimationFrame(loop);
+    }
+
+    initEnemies();
+    loop();
+</script>
+</body>
+</html>
