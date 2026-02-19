@@ -3,40 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Space Arcade: Progresión Total</title>
+    <title>Space Arcade: Mission Select</title>
     <style>
         body { margin: 0; background: #050510; color: #00d4ff; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; touch-action: none; }
-        canvas { background: #000; border: 2px solid #00d4ff; max-width: 100%; max-height: 75vh; touch-action: none; cursor: crosshair; }
-        .menu { position: absolute; width: 90%; max-width: 400px; background: rgba(10, 10, 30, 0.95); border: 2px solid #00d4ff; padding: 20px; box-sizing: border-box; border-radius: 15px; text-align: center; z-index: 10; box-shadow: 0 0 20px #00d4ff; }
+        canvas { background: #000; border: 2px solid #00d4ff; max-width: 100%; max-height: 70vh; touch-action: none; }
+        .menu { position: absolute; width: 90%; max-width: 420px; background: rgba(10, 10, 30, 0.98); border: 2px solid #00d4ff; padding: 20px; box-sizing: border-box; border-radius: 15px; text-align: center; z-index: 10; box-shadow: 0 0 30px rgba(0,212,255,0.4); }
         .hidden { display: none !important; }
-        .gold-counter { font-size: 1.5em; color: #ffd700; margin-bottom: 10px; font-weight: bold; }
-        button { background: #002233; color: #00d4ff; border: 1px solid #00d4ff; padding: 12px; margin: 4px 0; cursor: pointer; width: 100%; font-weight: bold; border-radius: 5px; }
-        button:active { background: #00d4ff; color: #000; }
-        .upgrade-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.85em; padding: 6px 0; border-bottom: 1px solid #003344; }
-        .btn-up { width: 110px; padding: 5px; font-size: 0.9em; }
+        .gold-counter { font-size: 1.4em; color: #ffd700; font-weight: bold; margin-bottom: 15px; }
+        button { background: #002233; color: #00d4ff; border: 1px solid #00d4ff; padding: 10px; margin: 4px 0; cursor: pointer; width: 100%; font-weight: bold; border-radius: 5px; }
+        button:disabled { border-color: #333; color: #555; cursor: not-allowed; }
+        .upgrade-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8em; padding: 5px 0; border-bottom: 1px solid #003344; }
+        .level-selector { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-top: 15px; padding-top: 10px; border-top: 2px solid #00d4ff; }
+        .lvl-btn { padding: 8px 0; font-size: 0.8em; background: #001122; }
+        .lvl-btn.unlocked { background: #004466; border-color: #00d4ff; }
+        .lvl-btn.selected { background: #00ffcc; color: #000; }
     </style>
 </head>
 <body>
 
     <div id="hangar" class="menu">
-        <h2 style="margin-top:0">🚀 HANGAR</h2>
+        <h2 style="margin:0 0 10px 0;">🚀 HANGAR CENTRAL</h2>
         <div id="gold-menu" class="gold-counter">💰 0</div>
         
-        <div class="upgrade-row">
-            <span>Cañones: Lvl <span id="lvl-cannons">1</span></span>
-            <button class="btn-up" onclick="buyUpgrade('cannons')">Mejorar (<span id="cost-cannons">150</span>)</button>
-        </div>
-        <div class="upgrade-row">
-            <span>Cadencia: Lvl <span id="lvl-fireRate">1</span></span>
-            <button class="btn-up" onclick="buyUpgrade('fireRate')">Mejorar (<span id="cost-fireRate">80</span>)</button>
-        </div>
-        <div class="upgrade-row">
-            <span>Escudos: Lvl <span id="lvl-hp">1</span></span>
-            <button class="btn-up" onclick="buyUpgrade('hp')">Mejorar (<span id="cost-hp">100</span>)</button>
-        </div>
-        
-        <button style="margin-top:20px; background:#006622; color:white; border-color:#00ff00;" onclick="startMission()">INICIAR MISIÓN</button>
-        <p style="font-size: 0.7em; color: #888;">Arrastra para mover • Disparo automático</p>
+        <div class="upgrade-row"><span>Cañones (Arco)</span><button style="width:100px" onclick="buyUpgrade('cannons')">Subir (<span id="cost-cannons">150</span>)</button></div>
+        <div class="upgrade-row"><span>Cadencia</span><button style="width:100px" onclick="buyUpgrade('fireRate')">Subir (<span id="cost-fireRate">80</span>)</button></div>
+        <div class="upgrade-row"><span>Escudos</span><button style="width:100px" onclick="buyUpgrade('hp')">Subir (<span id="cost-hp">100</span>)</button></div>
+
+        <p style="margin: 15px 0 5px 0; font-weight: bold;">SELECCIONAR MISIÓN:</p>
+        <div id="level-selector" class="level-selector">
+            </div>
+
+        <button id="start-btn" style="margin-top:20px; background:#006622; color:white;" onclick="startMission()">INICIAR MISIÓN <span id="selected-label">1</span></button>
     </div>
 
     <canvas id="gameCanvas" class="hidden"></canvas>
@@ -44,41 +41,35 @@
 <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
-    
-    // Ajuste de resolución
-    canvas.width = 400;
-    canvas.height = 600;
+    canvas.width = 400; canvas.height = 600;
 
-    // --- BASE DE DATOS DE ENEMIGOS ---
     const enemyTiers = [
-        { hp: 1, color: "#ff4444" }, // Nivel 1
-        { hp: 2, color: "#ff8800" }, // Nivel 2
-        { hp: 3, color: "#ffff00" }, 
-        { hp: 5, color: "#00ff00" }, 
-        { hp: 7, color: "#0088ff" }, 
-        { hp: 10, color: "#8800ff" }, 
-        { hp: 14, color: "#ff00ff" }, 
-        { hp: 20, color: "#ffffff" }, 
-        { hp: 30, color: "#555555" }, 
-        { hp: 50, color: "#330000" }  // Nivel 10
+        { hp: 1, color: "#ff4444", goal: 1000 },
+        { hp: 2, color: "#ff8800", goal: 2000 },
+        { hp: 4, color: "#ffff00", goal: 3500 },
+        { hp: 7, color: "#00ff00", goal: 5000 },
+        { hp: 12, color: "#0088ff", goal: 7000 },
+        { hp: 18, color: "#8800ff", goal: 10000 },
+        { hp: 25, color: "#ff00ff", goal: 14000 },
+        { hp: 35, color: "#ffffff", goal: 18000 },
+        { hp: 50, color: "#555555", goal: 25000 },
+        { hp: 80, color: "#330000", goal: 40000 }
     ];
 
     let stats = {
         gold: 0,
+        unlockedLevel: 1,
+        selectedLevel: 1,
         upgrades: {
-            cannons: { lvl: 1, cost: 150, max: 5 },
-            fireRate: { lvl: 1, cost: 80, val: 500 },
+            cannons: { lvl: 1, cost: 150, max: 7 },
+            fireRate: { lvl: 1, cost: 80, val: 600 },
             hp: { lvl: 1, cost: 100, val: 1 }
         }
     };
 
-    let gameActive = false;
-    let missionScore = 0;
-    let missionLevel = 1;
-    let lastFire = 0;
-    let player = { x: 185, y: 500, w: 30, h: 30, hp: 1 };
-    let bullets = [];
-    let enemies = [];
+    let gameActive = false, missionScore = 0, lastFire = 0;
+    let player = { x: 185, y: 520, w: 30, h: 30, hp: 1 };
+    let bullets = [], enemies = [];
 
     // --- CONTROLES ---
     function handleMove(e) {
@@ -86,35 +77,37 @@
         const rect = canvas.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         player.x = (clientX - rect.left) * (canvas.width / rect.width) - player.w/2;
-        
-        // Limites
-        if (player.x < 0) player.x = 0;
-        if (player.x > canvas.width - player.w) player.x = canvas.width - player.w;
     }
-
     window.addEventListener('mousemove', handleMove);
     window.addEventListener('touchmove', (e) => { e.preventDefault(); handleMove(e); }, {passive: false});
 
     function updateUI() {
         document.getElementById("gold-menu").innerText = `💰 ${stats.gold}`;
         for (let key in stats.upgrades) {
-            let u = stats.upgrades[key];
-            document.getElementById(`lvl-${key}`).innerText = u.lvl;
-            document.getElementById(`cost-${key}`).innerText = (u.max && u.lvl >= u.max) ? "MAX" : u.cost;
+            document.getElementById(`cost-${key}`).innerText = stats.upgrades[key].cost;
         }
+        
+        const selector = document.getElementById("level-selector");
+        selector.innerHTML = "";
+        for (let i = 1; i <= 10; i++) {
+            const btn = document.createElement("button");
+            btn.innerText = i;
+            btn.className = `lvl-btn ${i <= stats.unlockedLevel ? 'unlocked' : ''} ${i === stats.selectedLevel ? 'selected' : ''}`;
+            btn.disabled = i > stats.unlockedLevel;
+            btn.onclick = () => { stats.selectedLevel = i; updateUI(); };
+            selector.appendChild(btn);
+        }
+        document.getElementById("selected-label").innerText = stats.selectedLevel;
     }
 
     function buyUpgrade(type) {
         let u = stats.upgrades[type];
-        if (u.max && u.lvl >= u.max) return;
         if (stats.gold >= u.cost) {
             stats.gold -= u.cost;
             u.lvl++;
             u.cost = Math.floor(u.cost * 1.8);
-            if (type === 'fireRate') u.val = Math.max(100, u.val - 60);
+            if (type === 'fireRate') u.val = Math.max(120, u.val - 60);
             updateUI();
-        } else {
-            alert("No tienes suficiente oro");
         }
     }
 
@@ -123,18 +116,23 @@
         canvas.classList.remove("hidden");
         gameActive = true;
         missionScore = 0;
-        missionLevel = 1;
-        player.hp = stats.upgrades.hp.lvl; // Vida según mejora de escudos
-        bullets = [];
-        enemies = [];
+        player.hp = stats.upgrades.hp.lvl;
+        bullets = []; enemies = [];
         requestAnimationFrame(gameLoop);
     }
 
-    function endGame() {
+    function finishMission(success) {
         gameActive = false;
         let earned = Math.floor(missionScore / 10);
+        if (success) {
+            alert(`¡FELICITACIONES! Misión ${stats.selectedLevel} completada.\nGanaste ${earned} monedas.`);
+            if (stats.selectedLevel === stats.unlockedLevel && stats.unlockedLevel < 10) {
+                stats.unlockedLevel++;
+            }
+        } else {
+            alert(`MISIÓN FALLIDA\nRecolectaste ${earned} monedas.`);
+        }
         stats.gold += earned;
-        alert(`FIN DE LA MISIÓN\n\nNivel alcanzado: ${missionLevel}\nMonedas ganadas: ${earned}`);
         canvas.classList.add("hidden");
         document.getElementById("hangar").classList.remove("hidden");
         updateUI();
@@ -143,72 +141,59 @@
     function gameLoop(time) {
         if (!gameActive) return;
 
-        // 1. Subir de nivel de misión basado en puntos
-        if (missionScore > missionLevel * 1500 && missionLevel < 10) {
-            missionLevel++;
-        }
-
-        // 2. Disparo Automático
+        // Disparo en ARCO (Abanico circular)
         if (time - lastFire > stats.upgrades.fireRate.val) {
             let n = stats.upgrades.cannons.lvl;
+            let spread = Math.PI / 2.5; // Ángulo total del abanico (aprox 72 grados)
             for(let i=0; i<n; i++) {
-                let offset = (i - (n-1)/2) * 15;
-                bullets.push({ x: player.x + 13 + offset, y: player.y, s: 8 });
+                // Cálculo del ángulo para cada bala
+                let angle = (n === 1) ? -Math.PI/2 : (-Math.PI/2 - spread/2) + (spread / (n-1)) * i;
+                bullets.push({ 
+                    x: player.x + 15, y: player.y, 
+                    vx: Math.cos(angle) * 7, vy: Math.sin(angle) * 7 
+                });
             }
             lastFire = time;
         }
 
-        // 3. Mover Balas
-        for (let i = bullets.length - 1; i >= 0; i--) {
-            bullets[i].y -= bullets[i].s;
-            if (bullets[i].y < -20) bullets.splice(i, 1);
-        }
+        // Mover Balas
+        bullets.forEach((b, i) => {
+            b.x += b.vx; b.y += b.vy;
+            if(b.y < -20 || b.x < -20 || b.x > canvas.width + 20) bullets.splice(i, 1);
+        });
 
-        // 4. Crear Enemigos
-        if (Math.random() < 0.03 + (missionLevel * 0.005)) {
-            let maxTierIndex = Math.min(missionLevel - 1, 9);
-            let randomTier = Math.floor(Math.random() * (maxTierIndex + 1));
-            let config = enemyTiers[randomTier];
-            
+        // Spawn Enemigos (Nivel seleccionado determina qué sale)
+        if (Math.random() < 0.03 + (stats.selectedLevel * 0.005)) {
+            let tierIdx = Math.floor(Math.random() * stats.selectedLevel);
+            let config = enemyTiers[tierIdx];
             enemies.push({
-                x: Math.random() * (canvas.width - 30),
-                y: -30,
-                s: 2 + (Math.random() * 1.5),
-                hp: config.hp,
-                maxHp: config.hp,
-                color: config.color,
-                tier: randomTier
+                x: Math.random()*(canvas.width-30), y: -30, s: 2 + Math.random(),
+                hp: config.hp, maxHp: config.hp, color: config.color, tier: tierIdx
             });
         }
 
-        // 5. Mover Enemigos y Colisiones
-        for (let i = enemies.length - 1; i >= 0; i--) {
-            let en = enemies[i];
+        // Colisiones
+        enemies.forEach((en, ei) => {
             en.y += en.s;
-
-            // Colisión con Jugador
-            if (player.x < en.x + 30 && player.x + 30 > en.x && player.y < en.y + 30 && player.y + 30 > en.y) {
-                player.hp--;
-                enemies.splice(i, 1);
-                if (player.hp <= 0) { endGame(); return; }
-                continue;
-            }
-
-            // Colisión con Balas
-            for (let j = bullets.length - 1; j >= 0; j--) {
-                let b = bullets[j];
-                if (b.x < en.x + 30 && b.x + 4 > en.x && b.y < en.y + 30 && b.y + 10 > en.y) {
-                    en.hp--;
-                    bullets.splice(j, 1);
+            bullets.forEach((b, bi) => {
+                if (b.x > en.x && b.x < en.x+30 && b.y > en.y && b.y < en.y+30) {
+                    en.hp--; bullets.splice(bi, 1);
                     if (en.hp <= 0) {
-                        missionScore += (en.tier + 1) * 50;
-                        enemies.splice(i, 1);
-                        break;
+                        missionScore += (en.tier + 1) * 100;
+                        enemies.splice(ei, 1);
                     }
                 }
+            });
+            if (player.x < en.x+30 && player.x+30 > en.x && player.y < en.y+30 && player.y+30 > en.y) {
+                player.hp--; enemies.splice(ei, 1);
+                if (player.hp <= 0) finishMission(false);
             }
+            if (en.y > canvas.height) enemies.splice(ei, 1);
+        });
 
-            if (en.y > canvas.height) enemies.splice(i, 1);
+        // Verificar Objetivo
+        if (missionScore >= enemyTiers[stats.selectedLevel - 1].goal) {
+            finishMission(true);
         }
 
         draw();
@@ -216,46 +201,31 @@
     }
 
     function draw() {
-        ctx.fillStyle = "#050510";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#050510"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Jugador
+        ctx.fillStyle = "#00d4ff"; ctx.fillRect(player.x, player.y, player.w, player.h);
 
-        // Estrellas de fondo
-        ctx.fillStyle = "#ffffff";
-        for(let i=0; i<5; i++) ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 1, 1);
-
-        // Jugador (Nave con brillo)
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = "#00d4ff";
-        ctx.fillStyle = "#00d4ff";
-        ctx.fillRect(player.x, player.y, player.w, player.h);
-
-        // Balas
-        ctx.shadowBlur = 5;
-        ctx.shadowColor = "#ffff00";
+        // Balas (Arco)
         ctx.fillStyle = "#ffff00";
-        bullets.forEach(b => ctx.fillRect(b.x, b.y, 4, 10));
-
-        // Enemigos
-        ctx.shadowBlur = 0;
-        enemies.forEach(en => {
-            ctx.fillStyle = en.color;
-            ctx.fillRect(en.x, en.y, 30, 30);
-            
-            // Barra de vida
-            ctx.fillStyle = "#330000";
-            ctx.fillRect(en.x, en.y - 6, 30, 4);
-            ctx.fillStyle = "#00ff00";
-            ctx.fillRect(en.x, en.y - 6, (en.hp / en.maxHp) * 30, 4);
+        bullets.forEach(b => {
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, 3, 0, Math.PI*2);
+            ctx.fill();
         });
 
-        // HUD
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = "white";
-        ctx.font = "bold 14px Arial";
-        ctx.fillText(`PUNTOS: ${missionScore}`, 10, 25);
-        ctx.fillText(`NIVEL: ${missionLevel}`, 10, 45);
-        ctx.fillStyle = "#00ffcc";
-        ctx.fillText(`ESCUDOS: ${player.hp}`, 10, 65);
+        // Enemigos
+        enemies.forEach(en => {
+            ctx.fillStyle = en.color; ctx.fillRect(en.x, en.y, 30, 30);
+            ctx.fillStyle = "red"; ctx.fillRect(en.x, en.y-5, 30, 3);
+            ctx.fillStyle = "lime"; ctx.fillRect(en.x, en.y-5, (en.hp/en.maxHp)*30, 3);
+        });
+
+        // HUD Misión
+        ctx.fillStyle = "white"; ctx.font = "14px Arial";
+        let goal = enemyTiers[stats.selectedLevel-1].goal;
+        ctx.fillText(`OBJETIVO: ${missionScore} / ${goal}`, 10, 25);
+        ctx.fillText(`ESCUDOS: ${player.hp}`, 10, 45);
     }
 
     updateUI();
