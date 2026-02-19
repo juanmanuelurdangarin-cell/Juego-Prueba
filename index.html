@@ -3,28 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Space Arcade: Levels & Tiers</title>
+    <title>Space Arcade: Progresión Total</title>
     <style>
-        body { margin: 0; background: #050510; color: #00d4ff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; touch-action: none; }
-        canvas { background: #000; border: 2px solid #00d4ff; max-width: 100%; max-height: 70vh; touch-action: none; }
-        .menu { position: absolute; width: 90%; max-width: 400px; background: rgba(10, 10, 30, 0.95); border: 2px solid #00d4ff; padding: 20px; box-sizing: border-box; border-radius: 15px; text-align: center; z-index: 10; }
+        body { margin: 0; background: #050510; color: #00d4ff; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; touch-action: none; }
+        canvas { background: #000; border: 2px solid #00d4ff; max-width: 100%; max-height: 75vh; touch-action: none; cursor: crosshair; }
+        .menu { position: absolute; width: 90%; max-width: 400px; background: rgba(10, 10, 30, 0.95); border: 2px solid #00d4ff; padding: 20px; box-sizing: border-box; border-radius: 15px; text-align: center; z-index: 10; box-shadow: 0 0 20px #00d4ff; }
         .hidden { display: none !important; }
         .gold-counter { font-size: 1.5em; color: #ffd700; margin-bottom: 10px; font-weight: bold; }
-        button { background: #002233; color: #00d4ff; border: 1px solid #00d4ff; padding: 10px; margin: 4px 0; cursor: pointer; width: 100%; font-weight: bold; }
-        .upgrade-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8em; padding: 4px 0; border-bottom: 1px solid #003344; }
+        button { background: #002233; color: #00d4ff; border: 1px solid #00d4ff; padding: 12px; margin: 4px 0; cursor: pointer; width: 100%; font-weight: bold; border-radius: 5px; }
+        button:active { background: #00d4ff; color: #000; }
+        .upgrade-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.85em; padding: 6px 0; border-bottom: 1px solid #003344; }
+        .btn-up { width: 110px; padding: 5px; font-size: 0.9em; }
     </style>
 </head>
 <body>
 
     <div id="hangar" class="menu">
-        <h2>HANGAR - NIVEL <span id="current-max-level">1</span></h2>
+        <h2 style="margin-top:0">🚀 HANGAR</h2>
         <div id="gold-menu" class="gold-counter">💰 0</div>
         
-        <div class="upgrade-row"><span>Cañones (Multi):</span> <button onclick="buyUpgrade('cannons')" style="width:100px">Mejorar (<span id="cost-cannons">150</span>)</button></div>
-        <div class="upgrade-row"><span>Cadencia:</span> <button onclick="buyUpgrade('fireRate')" style="width:100px">Mejorar (<span id="cost-fireRate">80</span>)</button></div>
-        <div class="upgrade-row"><span>Escudos:</span> <button onclick="buyUpgrade('hp')" style="width:100px">Mejorar (<span id="cost-hp">100</span>)</button></div>
+        <div class="upgrade-row">
+            <span>Cañones: Lvl <span id="lvl-cannons">1</span></span>
+            <button class="btn-up" onclick="buyUpgrade('cannons')">Mejorar (<span id="cost-cannons">150</span>)</button>
+        </div>
+        <div class="upgrade-row">
+            <span>Cadencia: Lvl <span id="lvl-fireRate">1</span></span>
+            <button class="btn-up" onclick="buyUpgrade('fireRate')">Mejorar (<span id="cost-fireRate">80</span>)</button>
+        </div>
+        <div class="upgrade-row">
+            <span>Escudos: Lvl <span id="lvl-hp">1</span></span>
+            <button class="btn-up" onclick="buyUpgrade('hp')">Mejorar (<span id="cost-hp">100</span>)</button>
+        </div>
         
-        <button style="margin-top:20px; background:#006622; color:white;" onclick="startMission()">INICIAR MISIÓN</button>
+        <button style="margin-top:20px; background:#006622; color:white; border-color:#00ff00;" onclick="startMission()">INICIAR MISIÓN</button>
+        <p style="font-size: 0.7em; color: #888;">Arrastra para mover • Disparo automático</p>
     </div>
 
     <canvas id="gameCanvas" class="hidden"></canvas>
@@ -32,26 +44,27 @@
 <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+    
+    // Ajuste de resolución
     canvas.width = 400;
     canvas.height = 600;
 
-    // --- CONFIGURACIÓN DE ENEMIGOS POR NIVEL ---
+    // --- BASE DE DATOS DE ENEMIGOS ---
     const enemyTiers = [
-        { name: "Scout", hp: 1, color: "#ff4444" },
-        { name: "Raider", hp: 2, color: "#ff8800" },
-        { name: "Vanguard", hp: 3, color: "#ffff00" },
-        { name: "Interceptor", hp: 4, color: "#00ff00" },
-        { name: "Guardian", hp: 6, color: "#0088ff" },
-        { name: "Enforcer", hp: 8, color: "#8800ff" },
-        { name: "Destroyer", hp: 11, color: "#ff00ff" },
-        { name: "Dreadnought", hp: 15, color: "#ffffff" },
-        { name: "Titan", hp: 20, color: "#555555" },
-        { name: "Void Ship", hp: 28, color: "#330000" }
+        { hp: 1, color: "#ff4444" }, // Nivel 1
+        { hp: 2, color: "#ff8800" }, // Nivel 2
+        { hp: 3, color: "#ffff00" }, 
+        { hp: 5, color: "#00ff00" }, 
+        { hp: 7, color: "#0088ff" }, 
+        { hp: 10, color: "#8800ff" }, 
+        { hp: 14, color: "#ff00ff" }, 
+        { hp: 20, color: "#ffffff" }, 
+        { hp: 30, color: "#555555" }, 
+        { hp: 50, color: "#330000" }  // Nivel 10
     ];
 
     let stats = {
         gold: 0,
-        level: 1,
         upgrades: {
             cannons: { lvl: 1, cost: 150, max: 5 },
             fireRate: { lvl: 1, cost: 80, val: 500 },
@@ -59,37 +72,49 @@
         }
     };
 
-    let gameActive = false, missionScore = 0, lastFire = 0;
-    let player = { x: 185, y: 500, w: 30, h: 30 };
-    let bullets = [], enemies = [];
+    let gameActive = false;
+    let missionScore = 0;
+    let missionLevel = 1;
+    let lastFire = 0;
+    let player = { x: 185, y: 500, w: 30, h: 30, hp: 1 };
+    let bullets = [];
+    let enemies = [];
 
-    // Controles Touch/Mouse
+    // --- CONTROLES ---
     function handleMove(e) {
         if (!gameActive) return;
         const rect = canvas.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         player.x = (clientX - rect.left) * (canvas.width / rect.width) - player.w/2;
+        
+        // Limites
+        if (player.x < 0) player.x = 0;
+        if (player.x > canvas.width - player.w) player.x = canvas.width - player.w;
     }
-    canvas.addEventListener('mousemove', handleMove);
-    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleMove(e); }, {passive: false});
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('touchmove', (e) => { e.preventDefault(); handleMove(e); }, {passive: false});
 
     function updateUI() {
         document.getElementById("gold-menu").innerText = `💰 ${stats.gold}`;
-        document.getElementById("current-max-level").innerText = stats.level;
         for (let key in stats.upgrades) {
-            document.getElementById(`cost-${key}`).innerText = stats.upgrades[key].cost;
+            let u = stats.upgrades[key];
+            document.getElementById(`lvl-${key}`).innerText = u.lvl;
+            document.getElementById(`cost-${key}`).innerText = (u.max && u.lvl >= u.max) ? "MAX" : u.cost;
         }
     }
 
     function buyUpgrade(type) {
         let u = stats.upgrades[type];
+        if (u.max && u.lvl >= u.max) return;
         if (stats.gold >= u.cost) {
             stats.gold -= u.cost;
             u.lvl++;
             u.cost = Math.floor(u.cost * 1.8);
-            if (type === 'fireRate') u.val = Math.max(100, u.val - 50);
-            if (type === 'hp') u.val += 1;
+            if (type === 'fireRate') u.val = Math.max(100, u.val - 60);
             updateUI();
+        } else {
+            alert("No tienes suficiente oro");
         }
     }
 
@@ -98,104 +123,139 @@
         canvas.classList.remove("hidden");
         gameActive = true;
         missionScore = 0;
-        player.hp = stats.upgrades.hp.val;
-        bullets = []; enemies = [];
-        requestAnimationFrame(gameLoop);
-    }
-
-    function gameLoop(time) {
-        if (!gameActive) return;
-
-        // Disparo Automático
-        if (time - lastFire > stats.upgrades.fireRate.val) {
-            let n = stats.upgrades.cannons.lvl;
-            for(let i=0; i<n; i++) {
-                bullets.push({ x: player.x + 13 + (i-(n-1)/2)*15, y: player.y, s: 8 });
-            }
-            lastFire = time;
-        }
-
-        // Progresión de nivel basada en puntos
-        if (missionScore > stats.level * 2000 && stats.level < 10) {
-            stats.level++;
-        }
-
-        // Spawn de enemigos según nivel actual
-        if (Math.random() < 0.04) {
-            // Elige un tipo de enemigo aleatorio entre 0 y el nivel actual
-            let maxTier = Math.min(stats.level - 1, 9);
-            let tierIndex = Math.floor(Math.random() * (maxTier + 1));
-            let type = enemyTiers[tierIndex];
-            
-            enemies.push({ 
-                x: Math.random()*370, y: -30, s: 2 + Math.random(), 
-                hp: type.hp, maxHp: type.hp, color: type.color 
-            });
-        }
-
-        // Lógica de colisiones
-        bullets.forEach((b, bi) => {
-            b.y -= b.s;
-            enemies.forEach((en, ei) => {
-                if (b.x < en.x+30 && b.x+4 > en.x && b.y < en.y+30 && b.y+10 > en.y) {
-                    en.hp--;
-                    bullets.splice(bi, 1);
-                    if (en.hp <= 0) {
-                        enemies.splice(ei, 1);
-                        missionScore += 100 * (tierIndex + 1); // Más puntos por enemigos fuertes
-                    }
-                }
-            });
-        });
-
-        enemies.forEach((en, i) => {
-            en.y += en.s;
-            if (en.y > canvas.height) enemies.splice(i, 1);
-            if (player.x < en.x+30 && player.x+30 > en.x && player.y < en.y+30 && player.y+30 > en.y) {
-                player.hp--;
-                enemies.splice(i, 1);
-                if (player.hp <= 0) endGame();
-            }
-        });
-
-        draw();
+        missionLevel = 1;
+        player.hp = stats.upgrades.hp.lvl; // Vida según mejora de escudos
+        bullets = [];
+        enemies = [];
         requestAnimationFrame(gameLoop);
     }
 
     function endGame() {
         gameActive = false;
-        stats.gold += Math.floor(missionScore / 10);
+        let earned = Math.floor(missionScore / 10);
+        stats.gold += earned;
+        alert(`FIN DE LA MISIÓN\n\nNivel alcanzado: ${missionLevel}\nMonedas ganadas: ${earned}`);
         canvas.classList.add("hidden");
         document.getElementById("hangar").classList.remove("hidden");
         updateUI();
     }
 
+    function gameLoop(time) {
+        if (!gameActive) return;
+
+        // 1. Subir de nivel de misión basado en puntos
+        if (missionScore > missionLevel * 1500 && missionLevel < 10) {
+            missionLevel++;
+        }
+
+        // 2. Disparo Automático
+        if (time - lastFire > stats.upgrades.fireRate.val) {
+            let n = stats.upgrades.cannons.lvl;
+            for(let i=0; i<n; i++) {
+                let offset = (i - (n-1)/2) * 15;
+                bullets.push({ x: player.x + 13 + offset, y: player.y, s: 8 });
+            }
+            lastFire = time;
+        }
+
+        // 3. Mover Balas
+        for (let i = bullets.length - 1; i >= 0; i--) {
+            bullets[i].y -= bullets[i].s;
+            if (bullets[i].y < -20) bullets.splice(i, 1);
+        }
+
+        // 4. Crear Enemigos
+        if (Math.random() < 0.03 + (missionLevel * 0.005)) {
+            let maxTierIndex = Math.min(missionLevel - 1, 9);
+            let randomTier = Math.floor(Math.random() * (maxTierIndex + 1));
+            let config = enemyTiers[randomTier];
+            
+            enemies.push({
+                x: Math.random() * (canvas.width - 30),
+                y: -30,
+                s: 2 + (Math.random() * 1.5),
+                hp: config.hp,
+                maxHp: config.hp,
+                color: config.color,
+                tier: randomTier
+            });
+        }
+
+        // 5. Mover Enemigos y Colisiones
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            let en = enemies[i];
+            en.y += en.s;
+
+            // Colisión con Jugador
+            if (player.x < en.x + 30 && player.x + 30 > en.x && player.y < en.y + 30 && player.y + 30 > en.y) {
+                player.hp--;
+                enemies.splice(i, 1);
+                if (player.hp <= 0) { endGame(); return; }
+                continue;
+            }
+
+            // Colisión con Balas
+            for (let j = bullets.length - 1; j >= 0; j--) {
+                let b = bullets[j];
+                if (b.x < en.x + 30 && b.x + 4 > en.x && b.y < en.y + 30 && b.y + 10 > en.y) {
+                    en.hp--;
+                    bullets.splice(j, 1);
+                    if (en.hp <= 0) {
+                        missionScore += (en.tier + 1) * 50;
+                        enemies.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+
+            if (en.y > canvas.height) enemies.splice(i, 1);
+        }
+
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
     function draw() {
         ctx.fillStyle = "#050510";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Jugador
+
+        // Estrellas de fondo
+        ctx.fillStyle = "#ffffff";
+        for(let i=0; i<5; i++) ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 1, 1);
+
+        // Jugador (Nave con brillo)
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "#00d4ff";
         ctx.fillStyle = "#00d4ff";
         ctx.fillRect(player.x, player.y, player.w, player.h);
 
         // Balas
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = "#ffff00";
         ctx.fillStyle = "#ffff00";
         bullets.forEach(b => ctx.fillRect(b.x, b.y, 4, 10));
 
-        // Enemigos con barra de vida pequeña
+        // Enemigos
+        ctx.shadowBlur = 0;
         enemies.forEach(en => {
             ctx.fillStyle = en.color;
             ctx.fillRect(en.x, en.y, 30, 30);
+            
             // Barra de vida
-            ctx.fillStyle = "red";
-            ctx.fillRect(en.x, en.y - 5, 30, 3);
-            ctx.fillStyle = "lime";
-            ctx.fillRect(en.x, en.y - 5, (en.hp/en.maxHp)*30, 3);
+            ctx.fillStyle = "#330000";
+            ctx.fillRect(en.x, en.y - 6, 30, 4);
+            ctx.fillStyle = "#00ff00";
+            ctx.fillRect(en.x, en.y - 6, (en.hp / en.maxHp) * 30, 4);
         });
 
         // HUD
+        ctx.shadowBlur = 0;
         ctx.fillStyle = "white";
-        ctx.fillText(`NIVEL: ${stats.level} | PUNTOS: ${missionScore} | HP: ${player.hp}`, 10, 20);
+        ctx.font = "bold 14px Arial";
+        ctx.fillText(`PUNTOS: ${missionScore}`, 10, 25);
+        ctx.fillText(`NIVEL: ${missionLevel}`, 10, 45);
+        ctx.fillStyle = "#00ffcc";
+        ctx.fillText(`ESCUDOS: ${player.hp}`, 10, 65);
     }
 
     updateUI();
